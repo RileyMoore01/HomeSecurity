@@ -3,7 +3,7 @@ Making an at-home security system
 
 #Hardware 
 <li>
-  <ui>Raspberry Pi</ui>
+  <ul>Raspberry Pi</ul>
   <ui>Raspberry Pi Camera Module</ui>
   <ui>Custom Detection Software</ui>
 </li>
