@@ -1,7 +1,7 @@
 # HomeSecurity
 Making an at-home security system
 
---- Hardware ---
+#Hardware 
 <li>
   <ui>Raspberry Pi</ui>
 </li>
