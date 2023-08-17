@@ -5,5 +5,5 @@ Making an at-home security system
 <li>
   <ul>Raspberry Pi</ul>
   <ul>Raspberry Pi Camera Module</ul>
-  <ui>Custom Detection Software</ui>
+  <ul>Custom Detection Software</ul>
 </li>
