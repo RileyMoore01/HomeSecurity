@@ -83,3 +83,6 @@ For best results, compile opencv natively with ARM optimizations
   sudo chmod +x install_optimized_opencv.sh
   sudo ./install_optimized_opencv.sh #this script will take a long time to execute.
 </pre>
+
+<h3>Credit</h3>
+<a href='pyimagesearch'>pyimagesearch</a>
