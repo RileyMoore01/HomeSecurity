@@ -16,3 +16,9 @@ Making an at-home security system
   sudo apt install -y gpac
   pip3 install tensorflow
 </pre>
+For best results, compile opencv natively with ARM optimizations
+<pre>
+  cd raspi3/
+  sudo chmod +x install_optimized_opencv.sh
+  sudo ./install_optimized_opencv.sh #this script will take a long time to execute.
+</pre>
