@@ -4,7 +4,8 @@ Making an at-home security system. Used for alerting us if anyone is coming upst
 <h1>Hardware</h1>
 -Raspberry Pi 3<br/>
 -Raspberry Pi Camera Module<br/>
--Custom Detection Software<br/>
+-Ultrasonic sensor<br/>
+-High-pitched alaram<br/>
 
 <h1>Command line</h1>
 <pre>
