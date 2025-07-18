@@ -2,7 +2,7 @@ import tkinter as tk
 from tkinter import messagebox
 import threading
 import time
-import sensor  # Import the sensor module we created
+# import sensor  # Import the sensor module we created
 
 class SecuritySystemGUI:
     def __init__(self, root):
