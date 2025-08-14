@@ -1,42 +1,95 @@
+import tkinter as tk
+from tkinter import ttk
+import threading
 import RPi.GPIO as GPIO
 import time
 
 # Pin Definitions
-sound_pin = 17  # GPIO pin connected to the sound sensor's Digital Out (DO)
-alarm_pin = 27  # GPIO pin connected to your alarm's signal input
+sound_pin = 17
+alarm_pin = 27
 
-# --- System Configuration ---
-ALARM_DURATION = 3  # How long the alarm sounds in seconds
-COOLDOWN_PERIOD = 5 # Time to wait after an alarm to avoid multiple triggers
+# System Settings
+ALARM_DURATION = 3
+COOLDOWN_PERIOD = 5
 
-def setup():
-    """Sets up the GPIO pins."""
+# Flag to control monitoring thread
+monitoring = False
+
+def setup_gpio():
     GPIO.setmode(GPIO.BCM)
-    GPIO.setup(sound_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)  # Use pull-up resistor
+    GPIO.setup(sound_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
     GPIO.setup(alarm_pin, GPIO.OUT)
-    GPIO.output(alarm_pin, GPIO.LOW)  # Ensure alarm is off at the start
-    print("System setup complete. Waiting for dog barks...")
+    GPIO.output(alarm_pin, GPIO.LOW)
 
-def main():
-    """Main loop to monitor sound and trigger alarm."""
-    try:
-        setup()
-        while True:
-            # The sound sensor's digital pin is LOW when a sound is detected
-            if GPIO.input(sound_pin) == GPIO.LOW:
-                print("Bark detected! Sounding alarm...")
-                GPIO.output(alarm_pin, GPIO.HIGH) # Turn on the alarm
-                time.sleep(ALARM_DURATION)        # Keep alarm on for a set duration
-                GPIO.output(alarm_pin, GPIO.LOW)  # Turn off the alarm
-                print("Alarm silenced. Waiting for cooldown...")
-                time.sleep(COOLDOWN_PERIOD)       # Wait to prevent repeated alarms
+def cleanup_gpio():
+    GPIO.cleanup()
 
-            time.sleep(0.1) # Small delay to reduce CPU usage
+def monitor_sound(status_label):
+    global monitoring
+    while monitoring:
+        if GPIO.input(sound_pin) == GPIO.LOW:
+            status_label.config(text="🐶 Bark detected! Triggering alarm...", foreground="red")
+            GPIO.output(alarm_pin, GPIO.HIGH)
+            time.sleep(ALARM_DURATION)
+            GPIO.output(alarm_pin, GPIO.LOW)
+            status_label.config(text="⏳ Cooldown active...", foreground="orange")
+            time.sleep(COOLDOWN_PERIOD)
+        else:
+            status_label.config(text="✅ Listening for barks...", foreground="green")
+        time.sleep(0.1)
 
-    except KeyboardInterrupt:
-        print("\nProgram terminated by user.")
-    finally:
-        GPIO.cleanup()  # Clean up all GPIO pins to release resources
+def start_monitoring(status_label):
+    global monitoring
+    if not monitoring:
+        monitoring = True
+        setup_gpio()
+        status_label.config(text="✅ Listening for barks...", foreground="green")
+        threading.Thread(target=monitor_sound, args=(status_label,), daemon=True).start()
 
-if __name__ == '__main__':
-    main()
+def stop_monitoring(status_label):
+    global monitoring
+    if monitoring:
+        monitoring = False
+        GPIO.output(alarm_pin, GPIO.LOW)
+        cleanup_gpio()
+        status_label.config(text="⏹️ Monitoring stopped.", foreground="black")
+
+# --- GUI Setup ---
+def create_gui():
+    root = tk.Tk()
+    root.title("Dog Bark Alarm Control")
+    root.geometry("400x200")
+    root.resizable(False, False)
+
+    # Title Label
+    ttk.Label(root, text="🐾 Dog Bark Detection System", font=("Helvetica", 16)).pack(pady=10)
+
+    # Status Label
+    status_label = ttk.Label(root, text="System is idle.", font=("Helvetica", 12))
+    status_label.pack(pady=10)
+
+    # Button Frame
+    btn_frame = ttk.Frame(root)
+    btn_frame.pack(pady=10)
+
+    # Start Button
+    start_btn = ttk.Button(btn_frame, text="Start Monitoring", command=lambda: start_monitoring(status_label))
+    start_btn.grid(row=0, column=0, padx=10)
+
+    # Stop Button
+    stop_btn = ttk.Button(btn_frame, text="Stop Monitoring", command=lambda: stop_monitoring(status_label))
+    stop_btn.grid(row=0, column=1, padx=10)
+
+    # Exit Button
+    exit_btn = ttk.Button(root, text="Exit", command=lambda: on_exit(root))
+    exit_btn.pack(pady=10)
+
+    root.protocol("WM_DELETE_WINDOW", lambda: on_exit(root))
+    root.mainloop()
+
+def on_exit(root):
+    stop_monitoring(status_label=None)  # Safe even if not monitoring
+    root.destroy()
+
+if __name__ == "__main__":
+    create_gui()
