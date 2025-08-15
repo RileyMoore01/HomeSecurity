@@ -34,27 +34,34 @@ def monitor_sound(status_label, sound_label):
     while monitoring:
         sound_state = GPIO.input(SOUND_PIN)
         if sound_state == GPIO.LOW:
-            status_label.config(text="🐶 Bark detected!", foreground="#ff4d4d")
+            status_label.config(text="Bark detected!", foreground="#ff4d4d")
             sound_label.config(text="Sound: LOW (Detected)", foreground="#ff4d4d")
             GPIO.output(ALARM_PIN, GPIO.HIGH)
             time.sleep(ALARM_DURATION)
             GPIO.output(ALARM_PIN, GPIO.LOW)
-            status_label.config(text="⏳ Cooldown...", foreground="#ffaa00")
+            status_label.config(text="Cooldown...", foreground="#ffaa00")
             time.sleep(COOLDOWN_PERIOD)
         else:
             status_label.config(text="✅ Listening...", foreground="#33cc33")
             sound_label.config(text="Sound: HIGH (Quiet)", foreground="#33cc33")
         time.sleep(0.2)
 
-
-def start_monitoring(status_label, sound_label):
+def toggle_monitoring(toggle_btn, status_label, sound_label):
     global monitoring
     if not monitoring:
         monitoring = True
+        toggle_btn.config(text="Stop Monitoring", style="Red.TButton")
         setup_gpio()
         threading.Thread(
             target=monitor_sound, args=(status_label, sound_label), daemon=True
         ).start()
+    else:
+        monitoring = False
+        GPIO.output(ALARM_PIN, GPIO.LOW)
+        cleanup_gpio()
+        status_label.config(text="Monitoring stopped.", foreground="#666")
+        sound_label.config(text="Sound: --", foreground="#666")
+        toggle_btn.config(text="▶️ Start Monitoring", style="Green.TButton")
 
 
 def stop_monitoring(status_label, sound_label):
@@ -63,37 +70,46 @@ def stop_monitoring(status_label, sound_label):
         monitoring = False
         GPIO.output(ALARM_PIN, GPIO.LOW)
         cleanup_gpio()
-        status_label.config(text="⏹️ Monitoring stopped.", foreground="#666")
+        status_label.config(text="Monitoring stopped.", foreground="#666")
         sound_label.config(text="Sound: --", foreground="#666")
-
-
+        
+        
 # --- GUI ---
 def create_gui():
     root = tk.Tk()
-    root.title("🐾 Dog Bark Alarm")
-    root.geometry("450x300")
-    root.configure(bg="#f2f2f2")
+    root.title("Dog Bark Alarm")
+    root.geometry("600x400")
+    root.configure(bg="#f9f9f9")
     root.resizable(False, False)
 
     style = ttk.Style(root)
     style.theme_use("clam")
 
-    style.configure("TButton", font=("Segoe UI", 11), padding=10)
-    style.configure("TLabel", background="#f2f2f2")
+    # Base styles
+    style.configure("TButton", font=("Segoe UI", 12), padding=10)
+    style.configure("TLabel", background="#f9f9f9")
+
+    # Toggle button styles
+    style.configure("Green.TButton", background="#4CAF50", foreground="white")
+    style.map("Green.TButton",
+              background=[("active", "#45a049")])
+    style.configure("Red.TButton", background="#f44336", foreground="white")
+    style.map("Red.TButton",
+              background=[("active", "#e53935")])
 
     # --- Title ---
     ttk.Label(
         root,
         text="Dog Bark Detection System",
-        font=("Segoe UI", 18, "bold"),
+        font=("Segoe UI", 20, "bold"),
         foreground="#333",
-    ).pack(pady=15)
+    ).pack(pady=20)
 
     # --- Status Display ---
     status_label = ttk.Label(
         root, text="System is idle.", font=("Segoe UI", 14), foreground="#666"
     )
-    status_label.pack(pady=5)
+    status_label.pack(pady=10)
 
     # --- Sound Level Display ---
     sound_label = ttk.Label(
@@ -101,29 +117,21 @@ def create_gui():
     )
     sound_label.pack(pady=5)
 
-    # --- Buttons ---
-    btn_frame = ttk.Frame(root)
-    btn_frame.pack(pady=20)
-
-    start_btn = ttk.Button(
-        btn_frame,
-        text="▶ Start Monitoring",
-        command=lambda: start_monitoring(status_label, sound_label),
+    # --- Toggle Button ---
+    toggle_btn = ttk.Button(
+        root,
+        text="Start Monitoring",
+        style="Green.TButton",
+        command=lambda: toggle_monitoring(toggle_btn, status_label, sound_label),
     )
-    start_btn.grid(row=0, column=0, padx=10)
-
-    stop_btn = ttk.Button(
-        btn_frame,
-        text="⏹ Stop Monitoring",
-        command=lambda: stop_monitoring(status_label, sound_label),
-    )
-    stop_btn.grid(row=0, column=1, padx=10)
+    toggle_btn.pack(pady=30)
 
     # --- Exit ---
-    exit_btn = ttk.Button(
-        root, text="Exit", command=lambda: on_exit(root, status_label, sound_label)
-    )
-    exit_btn.pack(pady=10)
+    ttk.Button(
+        root,
+        text="Exit",
+        command=lambda: on_exit(root, status_label, sound_label),
+    ).pack(pady=10)
 
     root.protocol("WM_DELETE_WINDOW", lambda: on_exit(root, status_label, sound_label))
     root.mainloop()
